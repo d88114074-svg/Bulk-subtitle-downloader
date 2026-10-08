@@ -272,12 +272,35 @@ button.gray{
 
 let currentSeries = "";
 
+const seriesData = {
 
-// Temporary search function
+  "arrow": {
+
+    name: "Arrow",
+
+    seasons: {
+      1: 23,
+      2: 23,
+      3: 23,
+      4: 23,
+      5: 23,
+      6: 23,
+      7: 22,
+      8: 10
+    }
+
+  }
+
+};
+
+
+// Search series
 function searchSeries(){
 
   const name =
-    document.getElementById("seriesSearch").value.trim();
+    document.getElementById("seriesSearch")
+      .value
+      .trim();
 
   const status =
     document.getElementById("status");
@@ -290,66 +313,139 @@ function searchSeries(){
     return;
   }
 
-  currentSeries = name;
+
+  const key =
+    name.toLowerCase();
+
+
+  const series =
+    seriesData[key];
+
+
+  if(!series){
+
+    status.textContent =
+      "Series not available in the test database.";
+
+    document
+      .getElementById("seriesPanel")
+      .classList.add("hidden");
+
+    document
+      .getElementById("episodesPanel")
+      .classList.add("hidden");
+
+    return;
+  }
+
+
+  currentSeries =
+    series.name;
+
 
   document.getElementById("seriesName")
-    .textContent = name;
+    .textContent =
+      series.name;
+
 
   document.getElementById("seriesPanel")
     .classList.remove("hidden");
 
+
   status.textContent =
     "Series found. Select a season.";
 
-  // Temporary seasons
+
   const select =
     document.getElementById("seasonSelect");
+
 
   select.innerHTML =
     '<option value="">Select Season</option>';
 
-  for(let i=1;i<=5;i++){
+
+  for(const season in series.seasons){
 
     const option =
       document.createElement("option");
 
-    option.value = i;
+
+    option.value =
+      season;
+
+
     option.textContent =
-      "Season " + i;
+      "Season " +
+      season +
+      " (" +
+      series.seasons[season] +
+      " episodes)";
+
 
     select.appendChild(option);
+
   }
+
+
+  document
+    .getElementById("episodesPanel")
+    .classList.add("hidden");
 
 }
 
 
-// Temporary episode list
+// Load episodes
 function loadEpisodes(){
 
   const season =
-    document.getElementById("seasonSelect").value;
+    document.getElementById("seasonSelect")
+      .value;
+
 
   const panel =
     document.getElementById("episodesPanel");
 
+
   const list =
     document.getElementById("episodeList");
+
 
   if(!season){
 
     panel.classList.add("hidden");
+
     return;
   }
 
+
+  const series =
+    seriesData[
+      currentSeries.toLowerCase()
+    ];
+
+
+  if(!series){
+
+    return;
+  }
+
+
+  const episodeCount =
+    series.seasons[season];
+
+
   list.innerHTML = "";
 
-  // Temporary 10 episodes
-  for(let i=1;i<=10;i++){
+
+  for(let i=1; i<=episodeCount; i++){
 
     const row =
       document.createElement("div");
 
-    row.className = "episode";
+
+    row.className =
+      "episode";
+
 
     row.innerHTML = `
 
@@ -373,10 +469,14 @@ function loadEpisodes(){
 
     `;
 
+
     list.appendChild(row);
+
   }
 
+
   panel.classList.remove("hidden");
+
 }
 
 
@@ -386,7 +486,9 @@ function selectAll(){
   document
     .querySelectorAll(".episodeCheck")
     .forEach(box => {
+
       box.checked = true;
+
     });
 
 }
@@ -398,23 +500,35 @@ function unselectAll(){
   document
     .querySelectorAll(".episodeCheck")
     .forEach(box => {
+
       box.checked = false;
+
     });
 
 }
 
 
-// Temporary individual download
+// Individual download
 function downloadEpisode(number){
 
+  const season =
+    document.getElementById("seasonSelect")
+      .value;
+
+
   alert(
-    "Download function will be connected to Baiscope in the next step."
+    "Baiscope download will be connected next.\n\n" +
+    currentSeries +
+    " S" +
+    String(season).padStart(2,"0") +
+    "E" +
+    String(number).padStart(2,"0")
   );
 
 }
 
 
-// Temporary bulk download
+// Bulk download
 function downloadSelected(){
 
   const selected =
@@ -422,16 +536,21 @@ function downloadSelected(){
       ".episodeCheck:checked"
     );
 
+
   if(selected.length === 0){
 
-    alert("Please select at least one episode.");
+    alert(
+      "Please select at least one episode."
+    );
+
     return;
   }
+
 
   alert(
     selected.length +
     " episodes selected.\n\n" +
-    "Baiscope download function will be added in the next step."
+    "Bulk ZIP download will be connected next."
   );
 
 }
