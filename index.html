@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>TV Subtitle Downloader</title>
+
+<style>
+*{
+  box-sizing:border-box;
+}
+
+body{
+  margin:0;
+  font-family:Arial,sans-serif;
+  background:#f2f4f7;
+  color:#222;
+}
+
+header{
+  background:#0b5ed7;
+  color:white;
+  padding:18px 15px;
+  text-align:center;
+}
+
+header h1{
+  margin:0;
+  font-size:23px;
+}
+
+header p{
+  margin:6px 0 0;
+  font-size:13px;
+  opacity:.9;
+}
+
+main{
+  max-width:700px;
+  margin:20px auto;
+  padding:0 12px;
+}
+
+.panel{
+  background:white;
+  border-radius:12px;
+  padding:18px;
+  margin-bottom:15px;
+  box-shadow:0 2px 8px rgba(0,0,0,.08);
+}
+
+label{
+  display:block;
+  font-weight:bold;
+  margin-bottom:6px;
+}
+
+input,select,button{
+  width:100%;
+  padding:12px;
+  border-radius:8px;
+  border:1px solid #ccc;
+  font-size:16px;
+}
+
+input{
+  margin-bottom:12px;
+}
+
+select{
+  margin-bottom:12px;
+}
+
+button{
+  border:0;
+  background:#0b5ed7;
+  color:white;
+  font-weight:bold;
+  cursor:pointer;
+}
+
+button:hover{
+  opacity:.9;
+}
+
+button.secondary{
+  background:#198754;
+}
+
+button.gray{
+  background:#6c757d;
+}
+
+.search-row{
+  display:flex;
+  gap:8px;
+}
+
+.search-row input{
+  flex:1;
+  margin:0;
+}
+
+.search-row button{
+  width:120px;
+}
+
+#status{
+  margin-top:12px;
+  font-size:14px;
+  color:#555;
+}
+
+.series-title{
+  font-size:20px;
+  font-weight:bold;
+  margin-bottom:12px;
+}
+
+.episode{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:12px 5px;
+  border-bottom:1px solid #eee;
+}
+
+.episode:last-child{
+  border-bottom:0;
+}
+
+.episode input{
+  width:auto;
+  margin:0;
+}
+
+.episode-name{
+  flex:1;
+}
+
+.download-btn{
+  width:auto;
+  padding:8px 12px;
+  font-size:14px;
+}
+
+.actions{
+  display:flex;
+  gap:8px;
+  margin-top:15px;
+}
+
+.actions button{
+  flex:1;
+}
+
+.hidden{
+  display:none;
+}
+
+.note{
+  font-size:13px;
+  color:#666;
+  line-height:1.5;
+}
+
+@media(max-width:500px){
+  .search-row button{
+    width:95px;
+  }
+
+  .episode{
+    font-size:14px;
+  }
+
+  .download-btn{
+    padding:7px 9px;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <h1>📺 TV Subtitle Downloader</h1>
+  <p>Find Sinhala subtitles for TV series</p>
+</header>
+
+<main>
+
+  <section class="panel">
+
+    <label for="seriesSearch">TV Series</label>
+
+    <div class="search-row">
+      <input
+        id="seriesSearch"
+        type="text"
+        placeholder="Enter series name..."
+      >
+
+      <button onclick="searchSeries()">
+        🔎 Search
+      </button>
+    </div>
+
+    <div id="status"></div>
+
+  </section>
+
+
+  <section id="seriesPanel" class="panel hidden">
+
+    <div class="series-title" id="seriesName">
+      Series Name
+    </div>
+
+    <label for="seasonSelect">Season</label>
+
+    <select id="seasonSelect" onchange="loadEpisodes()">
+      <option value="">Select Season</option>
+    </select>
+
+  </section>
+
+
+  <section id="episodesPanel" class="panel hidden">
+
+    <label>Episodes</label>
+
+    <div class="actions">
+      <button class="gray" onclick="selectAll()">
+        ☑️ Select All
+      </button>
+
+      <button class="gray" onclick="unselectAll()">
+        ⬜ Clear
+      </button>
+    </div>
+
+    <div id="episodeList"></div>
+
+    <div class="actions">
+      <button class="secondary" onclick="downloadSelected()">
+        📦 Download Selected
+      </button>
+    </div>
+
+  </section>
+
+
+  <section class="panel">
+
+    <div class="note">
+      <b>How it will work:</b><br><br>
+
+      1. Search for a TV series.<br>
+      2. Select the season.<br>
+      3. Select the episodes you need.<br>
+      4. Press <b>Download Selected</b>.<br>
+      5. The subtitles will be collected into one ZIP file.
+    </div>
+
+  </section>
+
+</main>
+
+
+<script>
+
+let currentSeries = "";
+
+
+// Temporary search function
+function searchSeries(){
+
+  const name =
+    document.getElementById("seriesSearch").value.trim();
+
+  const status =
+    document.getElementById("status");
+
+  if(!name){
+
+    status.textContent =
+      "Please enter a TV series name.";
+
+    return;
+  }
+
+  currentSeries = name;
+
+  document.getElementById("seriesName")
+    .textContent = name;
+
+  document.getElementById("seriesPanel")
+    .classList.remove("hidden");
+
+  status.textContent =
+    "Series found. Select a season.";
+
+  // Temporary seasons
+  const select =
+    document.getElementById("seasonSelect");
+
+  select.innerHTML =
+    '<option value="">Select Season</option>';
+
+  for(let i=1;i<=5;i++){
+
+    const option =
+      document.createElement("option");
+
+    option.value = i;
+    option.textContent =
+      "Season " + i;
+
+    select.appendChild(option);
+  }
+
+}
+
+
+// Temporary episode list
+function loadEpisodes(){
+
+  const season =
+    document.getElementById("seasonSelect").value;
+
+  const panel =
+    document.getElementById("episodesPanel");
+
+  const list =
+    document.getElementById("episodeList");
+
+  if(!season){
+
+    panel.classList.add("hidden");
+    return;
+  }
+
+  list.innerHTML = "";
+
+  // Temporary 10 episodes
+  for(let i=1;i<=10;i++){
+
+    const row =
+      document.createElement("div");
+
+    row.className = "episode";
+
+    row.innerHTML = `
+
+      <input
+        type="checkbox"
+        class="episodeCheck"
+        value="${i}"
+      >
+
+      <div class="episode-name">
+        S${String(season).padStart(2,"0")}
+        E${String(i).padStart(2,"0")}
+      </div>
+
+      <button
+        class="download-btn"
+        onclick="downloadEpisode(${i})"
+      >
+        ⬇️
+      </button>
+
+    `;
+
+    list.appendChild(row);
+  }
+
+  panel.classList.remove("hidden");
+}
+
+
+// Select all
+function selectAll(){
+
+  document
+    .querySelectorAll(".episodeCheck")
+    .forEach(box => {
+      box.checked = true;
+    });
+
+}
+
+
+// Clear selection
+function unselectAll(){
+
+  document
+    .querySelectorAll(".episodeCheck")
+    .forEach(box => {
+      box.checked = false;
+    });
+
+}
+
+
+// Temporary individual download
+function downloadEpisode(number){
+
+  alert(
+    "Download function will be connected to Baiscope in the next step."
+  );
+
+}
+
+
+// Temporary bulk download
+function downloadSelected(){
+
+  const selected =
+    document.querySelectorAll(
+      ".episodeCheck:checked"
+    );
+
+  if(selected.length === 0){
+
+    alert("Please select at least one episode.");
+    return;
+  }
+
+  alert(
+    selected.length +
+    " episodes selected.\n\n" +
+    "Baiscope download function will be added in the next step."
+  );
+
+}
+
+</script>
+
+</body>
+</html>
