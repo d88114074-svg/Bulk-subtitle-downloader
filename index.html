@@ -272,17 +272,6 @@ button.gray{
 
 let currentSeries = "";
 
-const arrowSeasons = {
-  1: 23,
-  2: 23,
-  3: 23,
-  4: 23,
-  5: 23,
-  6: 23,
-  7: 22,
-  8: 10
-};
-
 
 // Temporary search function
 function searchSeries(){
@@ -312,27 +301,25 @@ function searchSeries(){
   status.textContent =
     "Series found. Select a season.";
 
-  // Arrow seasons
-const select =
-  document.getElementById("seasonSelect");
+  // Temporary seasons
+  const select =
+    document.getElementById("seasonSelect");
 
-select.innerHTML =
-  '<option value="">Select Season</option>';
+  select.innerHTML =
+    '<option value="">Select Season</option>';
 
+  for(let i=1;i<=5;i++){
 
+    const option =
+      document.createElement("option");
 
-for(const season in arrowSeasons){
+    option.value = i;
+    option.textContent =
+      "Season " + i;
 
-  const option =
-    document.createElement("option");
+    select.appendChild(option);
+  }
 
-  option.value = season;
-
-  option.textContent =
-    "Season " + season +
-    " (" + arrowSeasons[season] + " episodes)";
-
-  select.appendChild(option);
 }
 
 
@@ -357,9 +344,7 @@ function loadEpisodes(){
   list.innerHTML = "";
 
   // Temporary 10 episodes
-  const episodeCount = arrowSeasons[season] || 0;
-
-for(let i=1;i<=episodeCount;i++){
+  for(let i=1;i<=10;i++){
 
     const row =
       document.createElement("div");
