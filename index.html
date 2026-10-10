@@ -280,37 +280,48 @@ button.gray{
 <script>
   async function testEpisodePage(){
 
-  const status = document.getElementById("status");
+const status = document.getElementById("status");
 
-  status.textContent = "Testing Baiscope episode page...";
+status.textContent = "🔄 Checking Baiscope page through Replit...";
 
-  try {
+const apiUrl =
+"https://subtitle-link-finder-api--d88114074.replit.app/api/subtitle-links/extract";
 
-    const url =
-      "https://www.baiscope.lk/arrow-s02-e01-sinhala-subtitles/";
+const pageUrl =
+"https://www.baiscope.lk/arrow-s02-e01-sinhala-subtitles/";
 
-    const response = await fetch(url);
+try {
 
-    if(!response.ok){
-      throw new Error("HTTP " + response.status);
-    }
+const response = await fetch(apiUrl, {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json"
+  },
+  body: JSON.stringify({
+    url: pageUrl
+  })
+});
 
-    const html = await response.text();
+const result = await response.json();
 
-    status.textContent =
-      "✅ Episode page readable: " +
-      html.length + " characters";
+if(!response.ok){
+  throw new Error("API error: " + response.status);
+}
 
-    console.log(html);
+status.textContent =
+  "✅ Replit checked the page. Links found: " +
+  (result.links ? result.links.length : 0);
 
-  } catch(error) {
+console.log("Subtitle page result:", result);
 
-    console.error(error);
+} catch(error) {
 
-    status.textContent =
-      "❌ Cannot read episode page.";
+console.error("Subtitle API error:", error);
 
-  }
+status.textContent =
+  "❌ API request failed: " + error.message;
+
+}
 
 }
   async function testReplitAPI() {
