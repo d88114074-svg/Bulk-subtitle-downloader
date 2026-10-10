@@ -210,6 +210,8 @@ button.gray{
       <button onclick="testEpisodePage()">
   🧪 Test Episode Page
 </button>
+
+      <button onclick="testReplitAPI()">🔌 Test Replit API</button>
     </div>
     
 
@@ -310,6 +312,49 @@ button.gray{
 
   }
 
+}
+  async function testReplitAPI() {
+const apiUrl =
+"https://09abafe6-9236-4385-a449-2a2fcdabed65-00-2xod1mp8cdcg1.pike.replit.dev/api/subtitle-links/extract";
+
+const pageUrl =
+"https://www.baiscope.lk/download/breaking-bad-s01-e04-sinhala-subtitle/4343";
+
+const status = document.getElementById("status");
+
+status.textContent = "Connecting to Replit API...";
+
+try {
+const response = await fetch(apiUrl, {
+method: "POST",
+headers: {
+"Content-Type": "application/json"
+},
+body: JSON.stringify({
+url: pageUrl
+})
+});
+
+const result = await response.json();
+
+if (!response.ok) {
+  throw new Error("API error: " + response.status);
+}
+
+status.textContent =
+  "API connected successfully! Found " +
+  (result.links ? result.links.length : 0) +
+  " link(s).";
+
+console.log("Replit API result:", result);
+
+} catch (error) {
+status.textContent =
+"Connection failed: " + error.message;
+
+console.error("Replit API error:", error);
+
+}
 }
 
 let currentSeries = "";
