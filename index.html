@@ -375,6 +375,7 @@ const status = document.getElementById("status");
 const list = document.getElementById("episodeList");
 const panel = document.getElementById("episodesPanel");
 const seasonSelect = document.getElementById("seasonSelect");
+    seasonSelect.removeAttribute("onchange");
 const seriesName = document.getElementById("seriesName");
 
 status.textContent = "🔄 Loading Arrow episodes from Replit API...";
