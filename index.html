@@ -793,32 +793,132 @@ function downloadEpisode(number){
 
 
 // Bulk download
-function downloadSelected(){
+// Find subtitle links for selected episodes
+async function downloadSelected(){
 
-  const selected =
-    document.querySelectorAll(
-      ".episodeCheck:checked"
-    );
+  const selected = Array.from(
+    document.querySelectorAll(".episodeCheck:checked")
+  );
 
+  const status = document.getElementById("status");
 
   if(selected.length === 0){
-
-    alert(
-      "Please select at least one episode."
-    );
-
+    alert("Please select at least one episode.");
     return;
   }
 
+  const apiUrl =
+    "https://subtitle-link-finder-api--d88114074.replit.app/api/subtitle-links/extract";
 
-  alert(
-    selected.length +
-    " episodes selected.\n\n" +
-    "Bulk ZIP download will be connected next."
-  );
+  status.textContent =
+    "🔄 Finding subtitle links for " +
+    selected.length + " selected episodes...";
+
+  // Create or reuse the results area
+  let results = document.getElementById("subtitleResults");
+
+  if(!results){
+    results = document.createElement("div");
+    results.id = "subtitleResults";
+    results.style.padding = "12px";
+    results.style.marginTop = "12px";
+    results.style.overflowWrap = "anywhere";
+
+    const panel = document.getElementById("episodesPanel");
+    panel.appendChild(results);
+  }
+
+  results.replaceChildren();
+
+  const heading = document.createElement("h3");
+  heading.textContent = "Subtitle Links";
+  results.appendChild(heading);
+
+  let found = 0;
+  let failed = 0;
+
+  for(let i = 0; i < selected.length; i++){
+
+    const checkbox = selected[i];
+    const pageUrl = checkbox.value;
+    const title = checkbox.dataset.title ||
+      ("Episode " + (i + 1));
+
+    const episodeHeading = document.createElement("p");
+    episodeHeading.textContent =
+      "🔎 " + title;
+    results.appendChild(episodeHeading);
+
+    try{
+
+      const response = await fetch(apiUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          url: pageUrl
+        })
+      });
+
+      const result = await response.json();
+
+      if(!response.ok){
+        throw new Error(
+          result.error || "HTTP " + response.status
+        );
+      }
+
+      if(!Array.isArray(result.links) ||
+         result.links.length === 0){
+
+        const message = document.createElement("p");
+        message.textContent = "No subtitle links found.";
+        results.appendChild(message);
+        continue;
+      }
+
+      result.links.forEach(item => {
+
+        const url = typeof item === "string"
+          ? item
+          : item.url || item.href || item.link;
+
+        if(!url){
+          return;
+        }
+
+        const link = document.createElement("a");
+        link.href = url;
+        link.textContent = "⬇️ Open subtitle link";
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+
+        link.style.display = "block";
+        link.style.margin = "8px 0";
+
+        results.appendChild(link);
+        found++;
+
+      });
+
+    }catch(error){
+
+      failed++;
+
+      const message = document.createElement("p");
+      message.textContent =
+        "❌ Could not check this page: " + error.message;
+
+      results.appendChild(message);
+    }
+  }
+
+  status.textContent =
+    "✅ Search finished. Links found: " + found +
+    ". Pages with errors: " + failed + ".";
 
 }
-
 </script>
 
 </body>
