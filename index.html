@@ -371,141 +371,167 @@ let currentSeries = "";
   
   async function getArrowFromBaiscope(){
 
-  const status = document.getElementById("status");
-  const list = document.getElementById("episodeList");
-  const panel = document.getElementById("episodesPanel");
+const status = document.getElementById("status");
+const list = document.getElementById("episodeList");
+const panel = document.getElementById("episodesPanel");
+const seasonSelect = document.getElementById("seasonSelect");
+const seriesName = document.getElementById("seriesName");
 
-  status.textContent = "Reading Arrow episodes from Baiscope...";
+status.textContent = "🔄 Loading Arrow episodes from Replit API...";
+list.innerHTML = "";
+seasonSelect.innerHTML = '<option value="">Select Season</option>';
 
-  try {
+const apiUrl =
+"https://subtitle-link-finder-api--d88114074.replit.app/api/series/episodes";
 
-    const response = await fetch(
-      "https://www.baiscope.lk/tv-series/arrow/"
-    );
+try {
 
-    if(!response.ok){
-      throw new Error("HTTP " + response.status);
-    }
+const response = await fetch(apiUrl, {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json"
+  },
+  body: JSON.stringify({
+    url: "https://www.baiscope.lk/tv-series/arrow/"
+  })
+});
 
-    const html = await response.text();
+const result = await response.json();
 
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(html, "text/html");
+if(!response.ok){
+  throw new Error(
+    result.error || "API request failed: HTTP " + response.status
+  );
+}
 
-    const links = [...doc.querySelectorAll("a")];
-
-    const episodes = links.filter(link => {
-
-      const href = link.getAttribute("href") || "";
-      const text = link.textContent.trim();
-
-      return (
-        /arrow.*s\d+.*e\d+/i.test(href) ||
-        /arrow.*s\d+.*e\d+/i.test(text)
-      );
-
-    });
-
-    list.innerHTML = "";
+if(!Array.isArray(result.episodes)){
+  throw new Error("The API response does not contain an episodes list.");
+}
 
 const seasons = {};
 
-episodes.forEach(link => {
+result.episodes.forEach(item => {
 
-  const href = new URL(
-  link.getAttribute("href"),
-  "https://www.baiscope.lk/"
-).href;
-
-  const match =
-  (link.textContent + " " + href).match(
-    /s(\d+)\s*[:\-]\s*e(\d+)(?:\s*[-–&]\s*e(\d+))?/i
+  const match = item.text.match(
+    /S\s*(\d+)\s*[:\-]\s*E\s*(\d+)(?:\s*[–-]\s*E?\s*(\d+))?/i
   );
 
-  if(!match) return;
+  if(!match || !item.url) return;
 
-const season = Number(match[1]);
-const firstEpisode = Number(match[2]);
-
-const lastEpisode = match[3]
-  ? Number(match[3])
-  : firstEpisode;
-
-for(let episode = firstEpisode; episode <= lastEpisode; episode++){
+  const season = Number(match[1]);
+  const firstEpisode = Number(match[2]);
+  const lastEpisode = match[3]
+    ? Number(match[3])
+    : firstEpisode;
 
   if(!seasons[season]){
     seasons[season] = [];
   }
 
-  seasons[season].push({
-    season: season,
-    episode: episode,
-    url: href
-  });
+  for(let episode = firstEpisode; episode <= lastEpisode; episode++){
 
-}
+    const alreadyExists = seasons[season].some(
+      entry => entry.episode === episode
+    );
+
+    if(!alreadyExists){
+      seasons[season].push({
+        season,
+        episode,
+        text: item.text,
+        url: item.url
+      });
+    }
+
+  }
 
 });
 
-Object.keys(seasons)
-  .sort((a,b) => Number(a) - Number(b))
-  .forEach(season => {
+const seasonNumbers = Object.keys(seasons)
+  .map(Number)
+  .sort((a,b) => a-b);
 
-    const heading = document.createElement("h3");
+if(seasonNumbers.length === 0){
+  throw new Error("No season and episode numbers were recognized.");
+}
 
-    heading.textContent =
-      "📺 Season " + season;
+if(seriesName){
+  seriesName.textContent = "Arrow";
+}
 
-    list.appendChild(heading);
+seasonNumbers.forEach(season => {
 
-    seasons[season]
-      .sort((a,b) => a.episode - b.episode)
-      .forEach(item => {
+  const option = document.createElement("option");
+  option.value = season;
+  option.textContent = "Season " + season;
+  seasonSelect.appendChild(option);
 
-        const row = document.createElement("div");
+});
 
-        row.className = "episode";
+seasonSelect.onchange = function(){
 
-        row.innerHTML = `
-          <input
-            type="checkbox"
-            class="episodeCheck"
-            value="${item.url}"
-          >
+  list.innerHTML = "";
 
-          <div class="episode-name">
-            S${String(item.season).padStart(2,"0")}
-            E${String(item.episode).padStart(2,"0")}
-          </div>
+  const selectedSeason = Number(this.value);
 
-          <button
-            class="download-btn"
-            onclick="window.open('${item.url}','_blank')"
-          >
-            🔗
-          </button>
-        `;
+  if(!selectedSeason || !seasons[selectedSeason]){
+    return;
+  }
 
-        list.appendChild(row);
+  seasons[selectedSeason]
+    .sort((a,b) => a.episode-b.episode)
+    .forEach(item => {
 
+      const row = document.createElement("div");
+      row.className = "episode";
+
+      const checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
+      checkbox.className = "episodeCheck";
+      checkbox.value = item.url;
+      checkbox.dataset.title = item.text;
+
+      const name = document.createElement("div");
+      name.className = "episode-name";
+      name.textContent =
+        "S" + String(item.season).padStart(2,"0") +
+        " E" + String(item.episode).padStart(2,"0");
+
+      const linkButton = document.createElement("button");
+      linkButton.className = "download-btn";
+      linkButton.textContent = "🔗";
+      linkButton.type = "button";
+      linkButton.addEventListener("click", function(){
+        window.open(item.url, "_blank", "noopener");
       });
 
-  });
+      row.appendChild(checkbox);
+      row.appendChild(name);
+      row.appendChild(linkButton);
+      list.appendChild(row);
 
-    panel.classList.remove("hidden");
+    });
 
-    status.textContent =
-      "✅ Found " + episodes.length +
-      " Arrow episode links.";
+};
 
-  } catch(error) {
+panel.classList.remove("hidden");
 
-    console.error(error);
+seasonSelect.value = seasonNumbers[0];
+seasonSelect.dispatchEvent(new Event("change"));
 
-    status.textContent =
-      "❌ Could not read Arrow episodes.";
+status.textContent =
+  "✅ Loaded " + result.episodes.length +
+  " Arrow episode-page links across " +
+  seasonNumbers.length + " seasons. Select a season to view episodes.";
 
-  }
+} catch(error) {
+
+console.error("Arrow episode loading error:", error);
+
+status.textContent =
+  "❌ Could not load Arrow episodes: " + error.message;
+
+}
 
 }
 
