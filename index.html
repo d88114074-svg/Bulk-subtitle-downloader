@@ -204,7 +204,14 @@ button.gray{
       <button onclick="searchSeries()">
         🔎 Search
       </button>
+      <button onclick="getArrowFromBaiscope()">
+  📺 Read Arrow Episodes
+</button>
+      <button onclick="testEpisodePage()">
+  🧪 Test Episode Page
+</button>
     </div>
+    
 
     <div id="status"></div>
 
@@ -269,8 +276,183 @@ button.gray{
 
 
 <script>
+  async function testEpisodePage(){
+
+  const status = document.getElementById("status");
+
+  status.textContent = "Testing Baiscope episode page...";
+
+  try {
+
+    const url =
+      "https://www.baiscope.lk/arrow-s02-e01-sinhala-subtitles/";
+
+    const response = await fetch(url);
+
+    if(!response.ok){
+      throw new Error("HTTP " + response.status);
+    }
+
+    const html = await response.text();
+
+    status.textContent =
+      "✅ Episode page readable: " +
+      html.length + " characters";
+
+    console.log(html);
+
+  } catch(error) {
+
+    console.error(error);
+
+    status.textContent =
+      "❌ Cannot read episode page.";
+
+  }
+
+}
 
 let currentSeries = "";
+  
+  async function getArrowFromBaiscope(){
+
+  const status = document.getElementById("status");
+  const list = document.getElementById("episodeList");
+  const panel = document.getElementById("episodesPanel");
+
+  status.textContent = "Reading Arrow episodes from Baiscope...";
+
+  try {
+
+    const response = await fetch(
+      "https://www.baiscope.lk/tv-series/arrow/"
+    );
+
+    if(!response.ok){
+      throw new Error("HTTP " + response.status);
+    }
+
+    const html = await response.text();
+
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, "text/html");
+
+    const links = [...doc.querySelectorAll("a")];
+
+    const episodes = links.filter(link => {
+
+      const href = link.getAttribute("href") || "";
+      const text = link.textContent.trim();
+
+      return (
+        /arrow.*s\d+.*e\d+/i.test(href) ||
+        /arrow.*s\d+.*e\d+/i.test(text)
+      );
+
+    });
+
+    list.innerHTML = "";
+
+const seasons = {};
+
+episodes.forEach(link => {
+
+  const href = new URL(
+  link.getAttribute("href"),
+  "https://www.baiscope.lk/"
+).href;
+
+  const match =
+  (link.textContent + " " + href).match(
+    /s(\d+)\s*[:\-]\s*e(\d+)(?:\s*[-–&]\s*e(\d+))?/i
+  );
+
+  if(!match) return;
+
+const season = Number(match[1]);
+const firstEpisode = Number(match[2]);
+
+const lastEpisode = match[3]
+  ? Number(match[3])
+  : firstEpisode;
+
+for(let episode = firstEpisode; episode <= lastEpisode; episode++){
+
+  if(!seasons[season]){
+    seasons[season] = [];
+  }
+
+  seasons[season].push({
+    season: season,
+    episode: episode,
+    url: href
+  });
+
+}
+
+});
+
+Object.keys(seasons)
+  .sort((a,b) => Number(a) - Number(b))
+  .forEach(season => {
+
+    const heading = document.createElement("h3");
+
+    heading.textContent =
+      "📺 Season " + season;
+
+    list.appendChild(heading);
+
+    seasons[season]
+      .sort((a,b) => a.episode - b.episode)
+      .forEach(item => {
+
+        const row = document.createElement("div");
+
+        row.className = "episode";
+
+        row.innerHTML = `
+          <input
+            type="checkbox"
+            class="episodeCheck"
+            value="${item.url}"
+          >
+
+          <div class="episode-name">
+            S${String(item.season).padStart(2,"0")}
+            E${String(item.episode).padStart(2,"0")}
+          </div>
+
+          <button
+            class="download-btn"
+            onclick="window.open('${item.url}','_blank')"
+          >
+            🔗
+          </button>
+        `;
+
+        list.appendChild(row);
+
+      });
+
+  });
+
+    panel.classList.remove("hidden");
+
+    status.textContent =
+      "✅ Found " + episodes.length +
+      " Arrow episode links.";
+
+  } catch(error) {
+
+    console.error(error);
+
+    status.textContent =
+      "❌ Could not read Arrow episodes.";
+
+  }
+
+}
 
 const seriesData = {
 
